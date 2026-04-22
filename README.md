@@ -1,4 +1,3 @@
-````markdown
 # Resource Server (Protected API dummy)
 
 Repositori ini merupakan **Resource Server** yang mensimulasikan penyimpanan data esensial perusahaan, seperti _Executive Dashboard_ dan laporan infrastruktur.
@@ -41,4 +40,3 @@ Setiap kali ada permintaan akses (misal dari aplikasi _Dashboard_ atau Postman),
    go run main.go
    ```
 3. Server akan berjalan di http://localhost:9097.
-````
