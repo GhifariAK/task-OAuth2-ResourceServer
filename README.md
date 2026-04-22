@@ -1,53 +1,44 @@
-# Authorization Server (OAuth 2.0)
+````markdown
+# Resource Server (Protected API dummy)
 
-Repository ini merupakan implementasi **Authorization Server** yang dikembangkan untuk simulasi arsitektur keamanan _Microservices_. Proyek ini berfokus pada protokol komunikasi **Machine-to-Machine (M2M)**.
+Repositori ini merupakan **Resource Server** yang mensimulasikan penyimpanan data esensial perusahaan, seperti _Executive Dashboard_ dan laporan infrastruktur.
 
 ## --Deskripsi Proyek
 
-Server ini bertindak sebagai "Security Network". Tugas utamanya adalah memverifikasi identitas mesin atau aplikasi klien (Client) dan menerbitkan _Access Token_ yang aman, menggunakan alur **Client Credentials Grant** sesuai dengan spesifikasi **RFC 6749 Section 4.4**.
+Server ini bertindak sebagai penyedia data utama. Karena data yang disimpan bersifat rahasia, server ini dilindungi oleh lapisan **Auth Middleware**. Middleware ini bertugas mencegat setiap _request_ yang masuk dan memvalidasi "Tiket Akses" klien ke Authorization Server sebelum membuka gerbang data.
 
 ## Tech Stack
 
 - **Language:** Go (Golang)
-- **Library Utama:** `github.com/go-oauth2/oauth2/v4`
-- **Database (Client Store):** PostgreSQL
-- **Database (Token Store):** Redis / In-Memory
 - **Router:** Standard Native `net/http`
+- **Keamanan:** Custom Auth Middleware (Bearer Token Verification)
+- **Komunikasi:** Internal HTTP Request (Introspection)
 
-## Standar Keamanan & Kepatuhan RFC
+## Alur Keamanan (Middleware Workflow)
 
-Sistem ini dibangun dengan mematuhi standar keamanan IETF secara ketat:
+Setiap kali ada permintaan akses (misal dari aplikasi _Dashboard_ atau Postman), middleware akan melakukan langkah berikut:
 
-- **RFC 6749 Section 4.4:** Implementasi Client Credentials murni (Tanpa _Refresh Token_ untuk skenario B2B, namun ditambahkan pada code sesuai request).
-- **RFC 6749 Section 2.3.1:** Memaksa otentikasi klien menggunakan _Header_ `Authorization: Basic <base64(id:secret)>`.
-- **RFC 6750:** Menerbitkan token bertipe `Bearer`.
-- **RFC 7662:** Menyediakan _endpoint_ validasi token untuk Resource Server.
+1. Memeriksa keberadaan _Header_ `Authorization: Bearer <token>`.
+2. Mengekstrak token dan menanyakan validitasnya langsung ke Authorization Server (BE 1) melalui HTTP `GET /verify`.
+3. Jika Auth Server mengonfirmasi token tersebut valid dan aktif, barulah _handler_ utama dieksekusi dan data dikembalikan dalam format JSON.
+4. Jika token palsu atau kedaluwarsa, akses langsung ditolak dengan status `401 Unauthorized`.
 
 ## --Dokumentasi API
 
-### 1. Generate Access Token
+### 1. Mengambil Data Laporan
 
-- **Endpoint:** `POST /token`
-- **Tujuan:** Menukar Client ID dan Secret dengan Token.
+- **Endpoint:** `GET /api/reports`
+- **Tujuan:** Menarik data metrik Laporan Q1 dan Infrastruktur.
 - **Headers Wajib:**
-  - `Content-Type: application/x-www-form-urlencoded`
-  - `Authorization: Basic <base64_credentials>`
-- **Body:** `grant_type=client_credentials`
-
-### 2. validasi Token (Internal)
-
-- **Endpoint:** `GET /verify`
-- **Tujuan:** Digunakan oleh resource server untuk mengecek keaslian token.
+  - `Authorization: Bearer <access_token_dari_be_1>`
+- **Respons Sukses (200 OK):** Mengembalikan struktur JSON berisi _array_ laporan.
 
 ## Cara Menjalankan Server
 
-1. Pastikan PostgreSQL sudah ter-install dan berjalan.
-2. Atur _environment variable_ untuk koneksi database:
+1. **Prasyarat Penting:** Pastikan [Authorization Server ](https://github.com/GhifariAK/task-OAuth2-AuthServer) sudah berjalan di port 9096.
+2. Jalankan aplikasi ini:
    ```bash
-   export DB_CONN="postgres://user:password@localhost:5432/namadb?sslmode=disable"
+   go run main.go
    ```
-3. Jalankan aplikasi
-   ```bash
-    go run main.go
-   ```
-4. Server akan berjalan di http://localhost:9096.
+3. Server akan berjalan di http://localhost:9097.
+````
